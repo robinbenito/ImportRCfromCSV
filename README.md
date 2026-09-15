@@ -4,6 +4,11 @@ ImportRCfromCSV
 
 This is a simple Blender addon for importing camera positions from Reality Scan (formerly Reality Capture) from CSV file. It reads the source file, positions the cameras at the correct locations, applies rotational transformation, sets the correct focal lenght and optionally imports the images as backgrounds 
 
+**Install Instructions**
+1. Download this repository as a ZIP (Code > Download ZIP) — do not extract it.
+2. In Blender, go to Edit > Preferences > Add-ons > Install..., and select the downloaded ZIP file.
+3. Enable "Import RC Cameras" in the add-on list.
+
 **Use Instructions** 
 1. In Reality Scan, with the right component selected, choose Alignment > Export > Registration
 2. Choose to save as type "Internal/External camera parameters"

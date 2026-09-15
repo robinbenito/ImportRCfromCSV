@@ -81,7 +81,7 @@ class ImportRCameras(Operator, ImportHelper):
     
     def execute(self, context):
         
-        import_rc_camera_csv(filepath_csv, self.use_camera, self.user_image_path)
+        import_rc_camera_csv(self.filepath, self.use_camera, self.user_image_path)
 
         return {'FINISHED'}     
            
@@ -101,6 +101,15 @@ def import_rc_camera_csv(filepath_csv, use_camera, user_image_path):
     with open(filepath_csv, newline='') as csvfile:
         reader = csv.DictReader(csvfile)
 
+        # RealityCapture/RealityScan have used a couple of different column
+        # naming schemes across versions for the same data. Support both.
+        fieldnames = reader.fieldnames or []
+        heading_key = "yaw" if "yaw" in fieldnames else "heading"
+        focal_key = "f_35mm" if "f_35mm" in fieldnames else "f"
+        principal_point_is_normalized = "px_norm" in fieldnames
+        px_key = "px_norm" if principal_point_is_normalized else "px"
+        py_key = "py_norm" if principal_point_is_normalized else "py"
+
         for row in reader:
             name = row["#name"]
 
@@ -110,16 +119,20 @@ def import_rc_camera_csv(filepath_csv, use_camera, user_image_path):
             z = float(row["alt"]) * SCALE
 
             # CAMERA DATA
-            cam_data = bpy.data.cameras.new(name)      
-            cam_data.lens = float(row["f"]) * FACTOR
+            cam_data = bpy.data.cameras.new(name)
+            cam_data.lens = float(row[focal_key]) * FACTOR
             cam_data.sensor_width = SENSOR_WIDTH
             cam_data.sensor_height = SENSOR_HEIGHT
             cam_data.sensor_fit = 'HORIZONTAL'
 
-            px = float(row["px"])
-            py = float(row["py"])
-            cam_data.shift_x = px / SENSOR_WIDTH
-            cam_data.shift_y = -py / SENSOR_HEIGHT
+            px = float(row[px_key])
+            py = float(row[py_key])
+            if principal_point_is_normalized:
+                cam_data.shift_x = px
+                cam_data.shift_y = -py
+            else:
+                cam_data.shift_x = px / SENSOR_WIDTH
+                cam_data.shift_y = -py / SENSOR_HEIGHT
 
             # CAMERA OBJECT
             cam_obj = bpy.data.objects.new(name, cam_data)
@@ -128,7 +141,7 @@ def import_rc_camera_csv(filepath_csv, use_camera, user_image_path):
             # ROTATION: RealityCapture → Blender YXZ
             pitch = math.radians(float(row["pitch"]))
             roll  = math.radians(float(row["roll"]))
-            heading = math.radians(float(row["heading"]))
+            heading = math.radians(float(row[heading_key]))
 
             # RC docs mapping
             cam_obj.rotation_mode = 'YXZ'
